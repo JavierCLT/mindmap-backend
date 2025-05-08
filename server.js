@@ -8,6 +8,10 @@ app.use(express.json());
 
 const GROK_API_KEY = process.env.GROK_API_KEY;
 
+app.get('/generate', (req, res) => {
+  res.status(405).json({ error: 'Method Not Allowed. Use POST to generate a mind map.' });
+});
+
 app.post('/generate', async (req, res) => {
   const { topic } = req.body;
 
