@@ -1,15 +1,15 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
+const OpenAI = require('openai');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const GROK_API_KEY = process.env.GROK_API_KEY;
-
-app.get('/generate', (req, res) => {
-  res.status(405).json({ error: 'Method Not Allowed. Use POST to generate a mind map.' });
+const client = new OpenAI({
+    apiKey: process.env.GROK_API_KEY,
+    baseURL: "https://api.x.ai/v1",
 });
 
 app.post('/generate', async (req, res) => {
@@ -20,20 +20,22 @@ app.post('/generate', async (req, res) => {
   }
 
   try {
-    const response = await axios.post(
-      'https://api.x.ai/v1', // Updated endpoint
-      {
-        prompt: `Create a mind map in markdown format for the topic: ${topic}. List topics as central ideas, main branches, and sub-branches.`,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${GROK_API_KEY}`, // API key in headers
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const completion = await client.chat.completions.create({
+      model: "grok-3-beta",
+      messages: [
+        {
+          role: "system",
+          content: "You are Grok, a highly intelligent, helpful AI assistant. Generate responses in markdown format when requested.",
+        },
+        {
+          role: "user",
+          content: `Create a mind map in markdown format for the topic: ${topic}. Use # for the main topic, ## for main branches, and ### for sub-branches.`,
+        },
+      ],
+      max_tokens: 500 // Optional: adjust based on needs
+    });
 
-    const markdown = response.data.markdown || response.data.text; // Adjust based on actual response format
+    const markdown = completion.choices[0]?.message.content;
     if (!markdown) {
       throw new Error('No markdown received from Grok API');
     }
@@ -45,7 +47,7 @@ app.post('/generate', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
