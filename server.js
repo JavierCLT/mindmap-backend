@@ -18,7 +18,7 @@ app.post('/generate', async (req, res) => {
 
   try {
     // Call Grok's API to generate a mind map in markdown format
-    const response = await axios.post('https://api.x.ai/grok/generate', {
+    const response = await axios.post('https://api.x.ai/v1/chat/completions', {
       prompt: `Create a mind map in markdown format for the topic: ${topic}. List topics as central ideas, main branches, and sub-branches.`,
       api_key: GROK_API_KEY
     });
