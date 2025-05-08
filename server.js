@@ -3,10 +3,9 @@ const axios = require('axios');
 const cors = require('cors');
 const app = express();
 
-app.use(cors()); // Allow CORS for your GitHub Pages frontend
+app.use(cors());
 app.use(express.json());
 
-// Store your Grok API key securely in an environment variable
 const GROK_API_KEY = process.env.GROK_API_KEY;
 
 app.post('/generate', async (req, res) => {
@@ -17,13 +16,20 @@ app.post('/generate', async (req, res) => {
   }
 
   try {
-    // Call Grok's API to generate a mind map in markdown format
-    const response = await axios.post('https://api.x.ai/v1/chat/completions', {
-      prompt: `Create a mind map in markdown format for the topic: ${topic}. List topics as central ideas, main branches, and sub-branches.`,
-      api_key: GROK_API_KEY
-    });
+    const response = await axios.post(
+      'https://api.x.ai/v1/chat/completions', // Updated endpoint
+      {
+        prompt: `Create a mind map in markdown format for the topic: ${topic}. List topics as central ideas, main branches, and sub-branches.`,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${GROK_API_KEY}`, // API key in headers
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-    const markdown = response.data.markdown;
+    const markdown = response.data.markdown || response.data.text; // Adjust based on actual response format
     if (!markdown) {
       throw new Error('No markdown received from Grok API');
     }
