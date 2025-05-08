@@ -21,7 +21,7 @@ app.post('/generate', async (req, res) => {
 
   try {
     const completion = await client.chat.completions.create({
-      model: "grok-3-beta",
+      model: "grok-beta",
       messages: [
         {
           role: "system",
