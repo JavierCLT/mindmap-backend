@@ -21,7 +21,7 @@ app.post('/generate', async (req, res) => {
 
   try {
     const response = await axios.post(
-      'https://api.x.ai/v1/chat/completions', // Updated endpoint
+      'https://api.x.ai/v1', // Updated endpoint
       {
         prompt: `Create a mind map in markdown format for the topic: ${topic}. List topics as central ideas, main branches, and sub-branches.`,
       },
