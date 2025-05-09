@@ -20,23 +20,26 @@ app.post('/generate-mindmap', async (req, res) => {
     const { topic } = req.body;
 
     // Construct the prompt for the Grok API
-    const completion = await client.chat.completions.create({
-      model: "grok-beta",
-      messages: [
-        {
-          role: "system",
-          content: "You are Grok, a highly intelligent, helpful AI assistant. Generate responses in markdown format when requested.",
-        },
-        {
-          role: "user",
-          content: `Create a mind map in markdown format for the topic: ${topic}. Use # for the main topic, ## for main branches, and ### for sub-branches.`,
-        },
-      ],
-      max_tokens: 500 // Optional: adjust based on needs
-    });
+    const messages = [
+  {
+    role: "system",
+    content: "You are Grok, a highly intelligent, helpful AI assistant. Generate responses in markdown format when requested.",
+  },
+  {
+    role: "user",
+    content: `Create a mind map in markdown format for the topic: ${topic}. Use # for the main topic, ## for main branches, and ### for sub-branches.`,
+  }
+];
+
+    try {
+        // Call the Grok API using the OpenAI client
+        const completion = await client.chat.completions.create({
+            model: 'grok-beta',
+            messages: messages,
+        });
 
         // Extract the markdown from the response
-        const markdown = completion.choices[0].message.content;
+        const markdown = completion.choices[0]?.message.content;
         res.json({ markdown });
     } catch (error) {
         console.error('Error calling Grok API:', error);
