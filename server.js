@@ -1,9 +1,15 @@
 // mindmap-backend/server.js
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors'); // Import CORS at the top
+
 const app = express();
+
+// Enable CORS for your front-end domain (move this before routes)
+app.use(cors({ origin: 'https://JavierCLT.github.io' }));
 app.use(express.json());
 
+// Define the POST endpoint
 app.post('/generate-mindmap', async (req, res) => {
   const { topic } = req.body;
   const prompt = [
@@ -18,25 +24,22 @@ app.post('/generate-mindmap', async (req, res) => {
   ];
 
   try {
-    const response = await axios.post('https://api.x.ai/v1/chat/completions', { // Adjust URL based on actual Grok API
+    const response = await axios.post('https://api.x.ai/v1', {
       messages: prompt,
-      model: 'grok', // Adjust model name as needed
+      model: 'grok', // Verify this model name with Grok API docs
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.GROK_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
-    const markdown = response.data.choices[0].message.content; // Adjust based on actual response structure
+    const markdown = response.data.choices[0].message.content; // Verify response structure
     res.json({ markdown });
   } catch (error) {
-    console.error('Error calling Grok API:', error);
+    console.error('Error calling Grok API:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Failed to generate mindmap' });
   }
 });
-
-const cors = require('cors');
-app.use(cors({ origin: 'https://JavierCLT.github.io' }));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
