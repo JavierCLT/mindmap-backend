@@ -27,7 +27,7 @@ app.post('/generate-mindmap', async (req, res) => {
         },
         {
             role: 'user',
-            content: `Create a mind map of ${topic} in markdown format. List topics as central ideas, main branches, and sub-branches.`
+            content: `Create a mind map of ${topic} in markdown format using a hierarchical structure with headings (# for main topic, ## for main branches, ### for sub-branches).`
         }
     ];
 
