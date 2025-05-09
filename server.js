@@ -29,7 +29,7 @@ app.post('/generate', async (req, res) => {
         },
         {
           role: "user",
-          content: `Create a mind map of ${topic}. List topics as central ideas, main branches, and sub-branches. Once you have it, create a mind map for the results in markdown format`,
+          content: `Create a mind map of ${topic} in markdown format. List topics as central ideas, main branches, and sub-branches.`,
         },
       ],
       max_tokens: 500 // Optional: adjust based on needs
