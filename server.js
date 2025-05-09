@@ -34,7 +34,7 @@ app.post('/generate-mindmap', async (req, res) => {
     try {
         // Call the Grok API using the OpenAI client
         const completion = await client.chat.completions.create({
-            model: 'grok-3-beta',
+            model: 'grok-beta',
             messages: messages,
         });
 
