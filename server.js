@@ -25,11 +25,11 @@ app.post('/generate', async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are Grok, a highly intelligent, helpful AI assistant. Generate responses in markdown format when requested.",
+          content: "You are Grok, a highly intelligent, helpful AI assistant that helps users learn about any field of knowledge.",
         },
         {
           role: "user",
-          content: `Create a mind map in markdown format for the topic: ${topic}. Use # for the main topic, ## for main branches, and ### for sub-branches.`,
+          content: `Create a mind map of ${topic}. List topics as central ideas, main branches, and sub-branches. Once you have it, create a mind map for the results in markdown format`,
         },
       ],
       max_tokens: 500 // Optional: adjust based on needs
