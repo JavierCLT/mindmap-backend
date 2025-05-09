@@ -26,7 +26,7 @@ app.post('/generate-mindmap', async (req, res) => {
   try {
     const response = await axios.post('https://api.x.ai/v1', {
       messages: prompt,
-      model: 'grok', // Verify this model name with Grok API docs
+      model: 'grok-3-beta', // Verify this model name with Grok API docs
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.GROK_API_KEY}`,
