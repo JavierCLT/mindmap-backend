@@ -6,7 +6,7 @@ const cors = require('cors'); // Import CORS at the top
 const app = express();
 
 // Enable CORS for your front-end domain (move this before routes)
-app.use(cors({ origin: 'https://JavierCLT.github.io' }));
+app.use(cors({ origin: 'https://javierclt.github.io' }));
 app.use(express.json());
 
 // Define the POST endpoint
