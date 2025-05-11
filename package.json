@@ -1,5 +1,5 @@
 {
-  "name": "mindmap-backend",
+  "name": "mindmap-frontend",
   "version": "1.0.0",
   "type": "module",
   "description": "Backend for Mindmap Maker application",
