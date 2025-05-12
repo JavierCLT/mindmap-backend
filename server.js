@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001
 app.use(express.json())
 app.use(
   cors({
-    origin: "https://javierclt.github.io",
+    origin: "https://JavierCLT.github.io",
     methods: ["POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
