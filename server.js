@@ -14,7 +14,7 @@ app.use(express.json())
 
 // Configure CORS to only allow requests from the frontend domain
 const corsOptions = {
-  origin: ["https://javierclt.github.io", "http://localhost:3000"],
+  origin: ["https://javierclt.github.io/mindmap-maker", "http://localhost:3000"],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
