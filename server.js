@@ -17,9 +17,9 @@ const corsOptions = {
   origin: ["https://javierclt.github.io", "http://localhost:3000"],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-}
+};
 
-app.use(cors(corsOptions))
+app.use(cors(corsOptions));
 
 // Initialize OpenAI client for Grok API
 const openai = new OpenAI({
