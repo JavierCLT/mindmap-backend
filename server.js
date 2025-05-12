@@ -11,21 +11,28 @@ const PORT = process.env.PORT || 3001
 
 // Middleware
 app.use(express.json())
-app.use(
-  cors({
-    origin: "https://JavierCLT.github.io",
-    methods: ["POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-)
 
-// Initialize Grok API client
-const grokClient = new OpenAI({
+// Configure CORS to only allow requests from the frontend domain
+const corsOptions = {
+  origin: ["https://javierclt.github.io", "http://localhost:3000"],
+  methods: ["POST", "GET", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}
+
+app.use(cors(corsOptions))
+
+// Initialize OpenAI client for Grok API
+const openai = new OpenAI({
   apiKey: process.env.GROK_API_KEY,
   baseURL: "https://api.x.ai/v1",
 })
 
-// Generate mindmap endpoint
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "ok", message: "Mindmap Backend API is running" })
+})
+
+// Mindmap generation endpoint
 app.post("/generate-mindmap", async (req, res) => {
   try {
     const { topic } = req.body
@@ -36,22 +43,30 @@ app.post("/generate-mindmap", async (req, res) => {
 
     console.log(`Generating mindmap for topic: ${topic}`)
 
+    // Create the prompt for the Grok API
     const prompt = `Create a comprehensive mindmap in markdown format for the topic "${topic}".
     
-Use the following format:
-# ${topic}
-## Main Branch 1
-### Sub-branch 1.1
-### Sub-branch 1.2
-## Main Branch 2
-### Sub-branch 2.1
-### Sub-branch 2.2
+Format the mindmap as follows:
+- Use a single # for the main topic (the title)
+- Use ## for main branches (key categories)
+- Use ### for sub-branches (subcategories)
+- Use #### for details under sub-branches (if needed)
 
-Make sure to include at least 5-7 main branches and 2-4 sub-branches for each main branch.
-The mindmap should be detailed but concise, with each branch and sub-branch being 1-5 words.
-Do not include any explanatory text, only the hierarchical markdown structure.`
+For example, for "Artificial Intelligence":
 
-    const response = await grokClient.chat.completions.create({
+# Artificial Intelligence
+## Machine Learning
+### Supervised Learning
+### Unsupervised Learning
+## Deep Learning
+### Neural Networks
+#### CNNs
+#### RNNs
+
+Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. The markdown should be clean and properly formatted for rendering with the Markmap library.`
+
+    // Call the Grok API
+    const completion = await openai.chat.completions.create({
       model: "grok-beta",
       messages: [
         {
@@ -60,29 +75,29 @@ Do not include any explanatory text, only the hierarchical markdown structure.`
         },
         { role: "user", content: prompt },
       ],
-      max_tokens: 1000,
       temperature: 0.7,
+      max_tokens: 2000,
     })
 
-    const markdown = response.choices[0].message.content.trim()
-    console.log("Mindmap generated successfully")
+    // Extract the markdown from the response
+    const markdown = completion.choices[0]?.message?.content || ""
 
-    return res.status(200).json({ markdown })
+    if (!markdown) {
+      throw new Error("Failed to generate mindmap content")
+    }
+
+    // Return the markdown to the frontend
+    res.status(200).json({ markdown })
   } catch (error) {
     console.error("Error generating mindmap:", error)
-    return res.status(500).json({
+    res.status(500).json({
       error: "Failed to generate mindmap",
       details: error.message,
     })
   }
 })
 
-// Health check endpoint
-app.get("/", (req, res) => {
-  res.status(200).send("Mindmap Maker API is running")
-})
-
-// Start server
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
