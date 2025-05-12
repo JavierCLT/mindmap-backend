@@ -12,14 +12,31 @@ const PORT = process.env.PORT || 3001
 // Middleware
 app.use(express.json())
 
-// Configure CORS to only allow requests from the frontend domain
+// Configure CORS to allow requests from your GitHub Pages domain
 const corsOptions = {
-  origin: ["https://javierclt.github.io/mindmap-maker", "http://localhost:3000"],
+  origin: ["https://javierclt.github.io", "http://localhost:3000"],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-};
+  credentials: true,
+  optionsSuccessStatus: 204,
+}
 
-app.use(cors(corsOptions));
+// Apply CORS middleware
+app.use(cors(corsOptions))
+
+// Add CORS headers to all responses as a backup
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://javierclt.github.io")
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  res.header("Access-Control-Allow-Credentials", "true")
+
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    return res.status(204).send()
+  }
+  next()
+})
 
 // Initialize OpenAI client for Grok API
 const openai = new OpenAI({
@@ -95,6 +112,11 @@ Make sure the mindmap is well-structured, hierarchical, and covers the most impo
       details: error.message,
     })
   }
+})
+
+// Handle OPTIONS requests explicitly
+app.options("/generate-mindmap", cors(corsOptions), (req, res) => {
+  res.status(204).send()
 })
 
 // Start the server
