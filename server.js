@@ -12,9 +12,9 @@ const PORT = process.env.PORT || 3001
 // Middleware
 app.use(express.json())
 
-// Configure CORS to allow requests from your GitHub Pages domain
+// Configure CORS to be more permissive
 const corsOptions = {
-  origin: ["https://javierclt.github.io", "http://localhost:3000"],
+  origin: "*", // Allow all origins temporarily for debugging
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -24,16 +24,15 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions))
 
-// Add CORS headers to all responses as a backup
+// Remove the custom CORS headers middleware and replace with this simpler version
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://javierclt.github.io")
+  res.header("Access-Control-Allow-Origin", "*")
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-  res.header("Access-Control-Allow-Credentials", "true")
 
   // Handle preflight requests
   if (req.method === "OPTIONS") {
-    return res.status(204).send()
+    return res.status(204).end()
   }
   next()
 })
