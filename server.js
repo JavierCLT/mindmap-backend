@@ -79,7 +79,11 @@ For example, for "Artificial Intelligence":
 #### CNNs
 #### RNNs
 
-Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. The markdown should be clean and properly formatted for rendering with the Markmap library.`
+Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. 
+The markdown should be clean and properly formatted for rendering with the Markmap library. 
+Never include comments to introduce or summarize the content such as "Here is a detailed mindmap on "Brokerage Platforms in the US". 
+The only content you generate is the structured markdown.
+Your goal is to help users understand topics`
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
