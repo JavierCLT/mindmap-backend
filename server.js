@@ -16,7 +16,7 @@ app.use(express.json())
 // Configure CORS to be more permissive
 const corsOptions = {
   origin: [
-    'https://JavierCLT.github.io/frontend', // Your specific repo
+    'https://javierclt.github.io', // Your specific repo
     'http://localhost:5173', // For local development
     'http://localhost:3000' // Alternative local development port
     ],
@@ -41,18 +41,6 @@ const limiter = rateLimit({
 // Apply rate limiting to all requests
 app.use(limiter)
 
-// Remove the custom CORS headers middleware and replace with this simpler version
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*")
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    return res.status(204).end()
-  }
-  next()
-})
 
 // Initialize OpenAI client for Grok API
 const openai = new OpenAI({
