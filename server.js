@@ -16,7 +16,6 @@ app.use(express.json())
 // Configure CORS to be more permissive
 const corsOptions = {
   origin: [
-    'https://JavierCLT.github.io', // Your GitHub username
     'https://JavierCLT.github.io/frontend', // Your specific repo
     'http://localhost:5173', // For local development
     'http://localhost:3000' // Alternative local development port
