@@ -14,7 +14,11 @@ app.use(express.json())
 
 // Configure CORS to be more permissive
 const corsOptions = {
-  origin: "*", // Allow all origins temporarily for debugging
+  origin: [
+    'https://yourusername.github.io', // Your GitHub username
+    'https://yourusername.github.io/frontend', // Your specific repo
+    'http://localhost:5173' // For local development
+  ],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
