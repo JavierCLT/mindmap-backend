@@ -2,6 +2,7 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
 import { OpenAI } from "openai"
+import rateLimit from "express-rate-limit"
 
 // Load environment variables
 dotenv.config()
@@ -10,15 +11,16 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-app.use(express.json())
+app.use(cors(corsOptions))
 
 // Configure CORS to be more permissive
 const corsOptions = {
   origin: [
-    'https://yourusername.github.io', // Your GitHub username
-    'https://yourusername.github.io/frontend', // Your specific repo
-    'http://localhost:5173' // For local development
-  ],
+    'https://JavierCLT.github.io', // Your GitHub username
+    'https://JavierCLT.github.io/frontend', // Your specific repo
+    'http://localhost:5173', // For local development
+    'http://localhost:3000' // Alternative local development port
+    ],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -26,7 +28,19 @@ const corsOptions = {
 }
 
 // Apply CORS middleware
-app.use(cors(corsOptions))
+app.use(express.json())
+
+// Configure rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: "Too many requests from this IP, please try again after 15 minutes"
+})
+
+// Apply rate limiting to all requests
+app.use(limiter)
 
 // Remove the custom CORS headers middleware and replace with this simpler version
 app.use((req, res, next) => {
