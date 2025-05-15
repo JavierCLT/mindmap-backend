@@ -11,7 +11,7 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-app.use(cors(corsOptions))
+app.use(express.json())
 
 // Configure CORS to be more permissive
 const corsOptions = {
@@ -28,7 +28,7 @@ const corsOptions = {
 }
 
 // Apply CORS middleware
-app.use(express.json())
+app.use(cors(corsOptions))
 
 // Configure rate limiting
 const limiter = rateLimit({
