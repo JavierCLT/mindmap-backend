@@ -18,7 +18,10 @@ const corsOptions = {
   origin: [
     'https://javierclt.github.io', // Your specific repo
     'http://localhost:5173', // For local development
-    'https://www.mind-map-maker.com' // Alternative local development port
+    'https://www.mind-map-maker.com',
+    'https://mind-map-maker.com', // Without www
+    'http://www.mind-map-maker.com', // HTTP version
+    'http://mind-map-maker.com' // Alternative local development port
     ],
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
