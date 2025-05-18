@@ -15,19 +15,86 @@ app.use(express.json())
 
 // Configure CORS to be more permissive
 const corsOptions = {
-  origin: [
-    'https://javierclt.github.io', // Your specific repo
-    'http://localhost:5173', // For local development
-    'https://www.mind-map-maker.com',
-    'https://mind-map-maker.com', // Without www
-    'http://www.mind-map-maker.com', // HTTP version
-    'http://mind-map-maker.com' // Alternative local development port
-    ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://javierclt.github.io',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://www.mind-map-maker.com',
+      'https://mind-map-maker.com',
+      'http://www.mind-map-maker.com',
+      'http://mind-map-maker.com'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('vercel.app')) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["POST", "GET", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   optionsSuccessStatus: 204,
 }
+3. Debugging Middleware
+Add a debugging middleware to log all incoming requests:
+
+// Add this before your routes
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('Referer:', req.headers.referer);
+  next();
+});
+4. Explicit Error Response Format
+Make sure your error responses are consistent:
+
+app.post("/generate-mindmap", async (req, res) => {
+  try {
+    // ... existing code ...
+  } catch (error) {
+    console.error("Error generating mindmap:", error);
+    
+    // More detailed error response
+    res.status(500).json({
+      error: "Failed to generate mindmap",
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+5. Health Check Enhancement
+Improve your health check to verify the API key is set:
+
+app.get("/", (req, res) => {
+  const apiKeyConfigured = !!process.env.GROK_API_KEY;
+  
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Mindmap Backend API is running",
+    apiKeyConfigured: apiKeyConfigured,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+6. Preflight Request Handling
+Ensure your OPTIONS handling is correct:
+
+// This should be before your routes
+app.options('*', cors(corsOptions));
+Recommendation
+After making these changes, deploy your backend and test it with a simple request. You can use a tool like Postman or a simple curl command to test the API directly:
+
+curl -X POST https://mindmap-backend-five.vercel.app/generate-mindmap \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"test topic"}'
+This will help you determine if the issue is with your backend configuration or with how the frontend is making the request.
+
+Chat Input
 
 // Apply CORS middleware
 app.use(cors(corsOptions))
