@@ -86,13 +86,13 @@ app.get("/", (req, res) => {
 
 // This should be before your routes
 app.options('*', cors(corsOptions));
-Recommendation
-After making these changes, deploy your backend and test it with a simple request. You can use a tool like Postman or a simple curl command to test the API directly:
+// Recommendation
+// After making these changes, deploy your backend and test it with a simple request. You can use a tool like Postman or a simple curl command to test the API directly:
 
 curl -X POST https://mindmap-backend-five.vercel.app/generate-mindmap \
   -H "Content-Type: application/json" \
   -d '{"topic":"test topic"}'
-This will help you determine if the issue is with your backend configuration or with how the frontend is making the request.
+// This will help you determine if the issue is with your backend configuration or with how the frontend is making the request.
 
 Chat Input
 
@@ -141,24 +141,116 @@ Format the mindmap as follows:
 - Use a single # for the main topic (the title)
 - Use ## for main branches (key categories)
 - Use ### for sub-branches (subcategories)
-- Use #### for details under sub-branches (if needed)
+- Use #### for details under sub-branches 
 
-For example, for "Artificial Intelligence":
+For example, for "Online Brokerage Platforms":
 
-# Artificial Intelligence
-## Machine Learning
-### Supervised Learning
-### Unsupervised Learning
-## Deep Learning
-### Neural Networks
-#### CNNs
-#### RNNs
+# Online Brokerage Platforms
+
+- ## Platform Types
+  - Full-Service Brokerages
+    - Traditional financial advising
+    - Portfolio management
+    - Higher fees
+  - Discount Brokerages
+    - Low-cost trades
+    - Self-directed investing
+    - Limited advisory services
+  - Robo-Advisors
+    - Automated portfolio management
+    - Algorithm-driven investing
+    - Low fees
+
+- ## Features
+  - Trading Tools
+    - Charting and technical analysis
+    - Real-time quotes
+    - Mobile trading apps
+  - Account Types
+    - Individual taxable accounts
+    - Retirement accounts (e.g., IRA, 401(k))
+    - Custodial accounts
+  - Research and Education
+    - Market news and reports
+    - Educational webinars and articles
+    - Analyst ratings
+
+- ## Fees and Costs
+  - Trading Commissions
+    - Per-trade fees
+    - Commission-free trading
+    - Options and futures fees
+  - Account Fees
+    - Maintenance fees
+    - Inactivity fees
+    - Transfer fees
+  - Hidden Costs
+    - Spread markups
+    - Margin interest rates
+    - Premium service charges
+
+- ## Investment Options
+  - Asset Classes
+    - Stocks
+    - Bonds
+    - ETFs and mutual funds
+  - Alternative Investments
+    - Cryptocurrencies
+    - Forex
+    - Commodities
+  - Fractional Shares
+    - Partial stock ownership
+    - Low-cost entry to high-priced stocks
+
+- ## User Experience
+  - Interface Design
+    - Web platform usability
+    - Mobile app functionality
+    - Customization options
+  - Customer Support
+    - 24/7 availability
+    - Live chat, phone, email
+    - Community forums
+  - Onboarding Process
+    - Account setup ease
+    - Verification requirements
+    - Initial funding options
+
+- ## Regulation and Security
+  - Regulatory Compliance
+    - SEC and FINRA oversight
+    - SIPC insurance
+    - International regulations
+  - Security Measures
+    - Two-factor authentication
+    - Encryption protocols
+    - Biometric login
+  - Risk Management
+    - Margin call policies
+    - Stop-loss orders
+    - Account alerts
+
+- ## Popular Platforms (Examples)
+  - Traditional/Discount
+    - Fidelity
+    - Charles Schwab
+    - TD Ameritrade
+  - Modern Discount
+    - Robinhood
+    - Webull
+    - Interactive Brokers
+  - Robo-Advisors
+    - Betterment
+    - Wealthfront
+    - Vanguard Digital Advisor
 
 Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. 
 The markdown should be clean and properly formatted for rendering with the Markmap library. 
 Never include comments to introduce or summarize the content such as "Here is a detailed mindmap on "Brokerage Platforms in the US". 
 The only content you generate is the structured markdown.
-Your goal is to help users understand topics`
+Your goal is to help users understand topics. Mind maps are visual tools used for capturing, organizing, and visualizing ideas and information. 
+They help users understand concepts by breaking them down into their component parts and showing the relationships between them. 
+Mind maps are used for brainstorming, note-taking, problem-solving, decision-making, and even as a study aid`
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
@@ -171,7 +263,7 @@ Your goal is to help users understand topics`
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 2500,
     })
 
     // Extract the markdown from the response
