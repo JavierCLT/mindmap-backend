@@ -120,8 +120,8 @@ const openai = new OpenAI({
 
 // Health check endpoint
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Mindmap Backend API is running" })
-})
+  res.status(200).json({ status: "ok", message: "Mindmap Backend API is running", environment: process.env.NODE_ENV || 'production' });
+});
 
 // Mindmap generation endpoint
 app.post("/generate-mindmap", async (req, res) => {
