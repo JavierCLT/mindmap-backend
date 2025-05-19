@@ -245,6 +245,7 @@ For example, for "Online Brokerage Platforms":
     - Vanguard Digital Advisor
 
 Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. 
+Including the topic, the markdown structure can only have up to 4 levels. Never include a 5th level of identation in the markdown.
 The markdown should be clean and properly formatted for rendering with the Markmap library. 
 Never include comments to introduce or summarize the content such as "Here is a detailed mindmap on "Brokerage Platforms in the US". 
 The only content you generate is the structured markdown.
