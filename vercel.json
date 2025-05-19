@@ -14,7 +14,9 @@
     {
       "src": "/(.*)",
       "dest": "/api/index.js"
-    }
+    },
+      "src": "/generate-mindmap", 
+      "dest": "/api/generate-mindmap.js"
   ],
   "env": {
     "NODE_ENV": "production"
