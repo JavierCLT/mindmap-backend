@@ -41,8 +41,8 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 204,
 }
-3. Debugging Middleware
-Add a debugging middleware to log all incoming requests:
+//3. Debugging Middleware
+//Add a debugging middleware to log all incoming requests:
 
 // Add this before your routes
 app.use((req, res, next) => {
@@ -51,8 +51,8 @@ app.use((req, res, next) => {
   console.log('Referer:', req.headers.referer);
   next();
 });
-4. Explicit Error Response Format
-Make sure your error responses are consistent:
+//4. Explicit Error Response Format
+//Make sure your error responses are consistent:
 
 app.post("/generate-mindmap", async (req, res) => {
   try {
@@ -68,8 +68,8 @@ app.post("/generate-mindmap", async (req, res) => {
     });
   }
 });
-5. Health Check Enhancement
-Improve your health check to verify the API key is set:
+//5. Health Check Enhancement
+//Improve your health check to verify the API key is set:
 
 app.get("/", (req, res) => {
   const apiKeyConfigured = !!process.env.GROK_API_KEY;
@@ -81,8 +81,8 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
-6. Preflight Request Handling
-Ensure your OPTIONS handling is correct:
+//6. Preflight Request Handling
+//Ensure your OPTIONS handling is correct:
 
 // This should be before your routes
 app.options('*', cors(corsOptions));
