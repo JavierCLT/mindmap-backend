@@ -12,11 +12,13 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/generate-mindmap",
+      "dest": "/api/generate-mindmap.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.js"
-    },
-      "src": "/generate-mindmap", 
-      "dest": "/api/generate-mindmap.js"
+    }
   ],
   "env": {
     "NODE_ENV": "production"
