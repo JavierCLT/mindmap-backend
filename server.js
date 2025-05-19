@@ -143,106 +143,16 @@ Format the mindmap as follows:
 - Use ### for sub-branches (subcategories)
 - Use #### for details under sub-branches 
 
-For example, for "Online Brokerage Platforms":
+For example, for "Artificial Intelligence":
 
-# Online Brokerage Platforms
-
-- ## Platform Types
-  - Full-Service Brokerages
-    - Traditional financial advising
-    - Portfolio management
-    - Higher fees
-  - Discount Brokerages
-    - Low-cost trades
-    - Self-directed investing
-    - Limited advisory services
-  - Robo-Advisors
-    - Automated portfolio management
-    - Algorithm-driven investing
-    - Low fees
-
-- ## Features
-  - Trading Tools
-    - Charting and technical analysis
-    - Real-time quotes
-    - Mobile trading apps
-  - Account Types
-    - Individual taxable accounts
-    - Retirement accounts (e.g., IRA, 401(k))
-    - Custodial accounts
-  - Research and Education
-    - Market news and reports
-    - Educational webinars and articles
-    - Analyst ratings
-
-- ## Fees and Costs
-  - Trading Commissions
-    - Per-trade fees
-    - Commission-free trading
-    - Options and futures fees
-  - Account Fees
-    - Maintenance fees
-    - Inactivity fees
-    - Transfer fees
-  - Hidden Costs
-    - Spread markups
-    - Margin interest rates
-    - Premium service charges
-
-- ## Investment Options
-  - Asset Classes
-    - Stocks
-    - Bonds
-    - ETFs and mutual funds
-  - Alternative Investments
-    - Cryptocurrencies
-    - Forex
-    - Commodities
-  - Fractional Shares
-    - Partial stock ownership
-    - Low-cost entry to high-priced stocks
-
-- ## User Experience
-  - Interface Design
-    - Web platform usability
-    - Mobile app functionality
-    - Customization options
-  - Customer Support
-    - 24/7 availability
-    - Live chat, phone, email
-    - Community forums
-  - Onboarding Process
-    - Account setup ease
-    - Verification requirements
-    - Initial funding options
-
-- ## Regulation and Security
-  - Regulatory Compliance
-    - SEC and FINRA oversight
-    - SIPC insurance
-    - International regulations
-  - Security Measures
-    - Two-factor authentication
-    - Encryption protocols
-    - Biometric login
-  - Risk Management
-    - Margin call policies
-    - Stop-loss orders
-    - Account alerts
-
-- ## Popular Platforms (Examples)
-  - Traditional/Discount
-    - Fidelity
-    - Charles Schwab
-    - TD Ameritrade
-  - Modern Discount
-    - Robinhood
-    - Webull
-    - Interactive Brokers
-  - Robo-Advisors
-    - Betterment
-    - Wealthfront
-    - Vanguard Digital Advisor
+# Artificial Intelligence
+## Machine Learning
+### Supervised Learning
+### Unsupervised Learning
+## Deep Learning
+### Neural Networks
+#### CNNs
+#### RNNs
 
 Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. 
 Including the topic, the markdown structure can only have up to 4 levels. Never include a 5th level of identation in the markdown.
