@@ -174,7 +174,7 @@ Mind maps are used for brainstorming, note-taking, problem-solving, decision-mak
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
-      max_tokens: 3000,
+      max_tokens: 10000,
     })
 
     // Extract the markdown from the response
