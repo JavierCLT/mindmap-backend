@@ -138,30 +138,35 @@ app.post("/generate-mindmap", async (req, res) => {
     const prompt = `Create a comprehensive mindmap in markdown format for the topic "${topic}".
     
 Format the mindmap as follows:
-- Use a single # for the main topic (the title)
-- Use ## for main branches (key categories)
-- Use ### for sub-branches (subcategories)
-- Use #### for details under sub-branches 
+Use a single # for the main topic (the title).  
+Use ## for main branches (key categories).  
+Use ### for sub-branches (subcategories).  
+Use #### for details or examples under sub-branches.
+
+ 
 
 For example, for "Artificial Intelligence":
 
-# Artificial Intelligence
-## Machine Learning
-### Supervised Learning
-### Unsupervised Learning
-## Deep Learning
-### Neural Networks
-#### CNNs
-#### RNNs
+# Artificial Intelligence  
+## Machine Learning  
+### Supervised Learning  
+#### Linear Regression  
+#### Decision Trees  
+### Unsupervised Learning  
+#### K-Means Clustering  
+#### PCA  
+## Deep Learning  
+### Neural Networks  
+#### Convolutional Neural Networks (CNNs)  
+#### Recurrent Neural Networks (RNNs) 
 
-Make sure the mindmap is well-structured, hierarchical, and covers the most important aspects of the topic. 
-Including the topic, the markdown structure can only have up to 4 levels. Never include a 5th level of identation in the markdown.
-The markdown should be clean and properly formatted for rendering with the Markmap library. 
-Never include comments to introduce or summarize the content such as "Here is a detailed mindmap on "Brokerage Platforms in the US". 
-The only content you generate is the structured markdown.
-Your goal is to help users understand topics. Mind maps are visual tools used for capturing, organizing, and visualizing ideas and information. 
-They help users understand concepts by breaking them down into their component parts and showing the relationships between them. 
-Mind maps are used for brainstorming, note-taking, problem-solving, decision-making, and even as a study aid`
+Ensure the mindmap is hierarchical, well-organized, and covers the most critical and relevant aspects of the topic.  
+Include up to four levels of markdown hierarchy (never use a fifth level, such as #####).  
+At the fourth level (####), include as many specific examples or details as relevant to illustrate the sub-branch.  
+The markdown must be clean, properly formatted, and compatible with rendering in the Markmap library (e.g., no extra spaces, comments, or non-markdown text).  
+Do not include introductory or summary comments (e.g., "Here is a detailed mindmap on [Topic]"). Only output the structured markdown.  
+Focus on creating a mindmap that enhances understanding by breaking down the topic into its core components and showing clear relationships between them.  
+Mindmaps are visual tools for capturing, organizing, and visualizing ideas, often used for brainstorming, note-taking, problem-solving, decision-making, or as a study aid. Ensure the structure supports these purposes.`
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
@@ -174,7 +179,7 @@ Mind maps are used for brainstorming, note-taking, problem-solving, decision-mak
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
-      max_tokens: 10000,
+      max_tokens: 4000,
     })
 
     // Extract the markdown from the response
