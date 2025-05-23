@@ -145,20 +145,39 @@ Use #### for details or examples under sub-branches.
 
  
 
-For example, for "Artificial Intelligence":
+For example, for "Plan a Wedding Event":
 
-# Artificial Intelligence  
-## Machine Learning  
-### Supervised Learning  
-#### Linear Regression  
-#### Decision Trees  
-### Unsupervised Learning  
-#### K-Means Clustering  
-#### PCA  
-## Deep Learning  
-### Neural Networks  
-#### Convolutional Neural Networks (CNNs)  
-#### Recurrent Neural Networks (RNNs) 
+# Plan a Wedding Event
+## Pre-Wedding Planning
+### Budgeting
+#### Venue Costs: $5000 for Lakeside Venue, $3000 for Indoor Hall
+#### Catering: $50 per Person for Buffet, $2000 for Cake
+### Venue Selection
+#### Outdoor Options: Lakeside Park in June, Botanical Gardens
+#### Indoor Options: Grand Hotel Ballroom, Historic Church Hall
+### Guest List
+#### Family: Invite 50 Relatives, Create RSVP System
+#### Friends: Invite 30 Close Friends, Send Digital Invites
+## Wedding Day Logistics
+### Ceremony
+#### Timing: 11 AM Start, 30-Minute Vows
+#### Officiant: Hire Local Priest, Prepare Custom Vows
+### Reception
+#### Food: Italian Buffet with Pasta Station, Vegan Options
+#### Entertainment: Live Band (The Harmony Strings), First Dance at 7 PM
+### Photography
+#### Photographer: Book Jane Doe Photography, $1500 Package
+#### Videographer: Hire John Smith Films, Capture Drone Shots
+## Post-Wedding
+### Thank You Notes
+#### Timing: Send Within 1 Month, Use Custom Stationery
+#### Gifts: Include Small Tokens, Mention Specific Gifts in Notes
+### Honeymoon Planning
+#### Destination: Santorini for 7 Days, Paris for 5 Days
+#### Activities: Sunset Cruise in Santorini, Eiffel Tower Dinner
+### Memory Preservation
+#### Album: Create Shutterfly Photo Book, Include 100 Photos
+#### Video: Edit Highlight Reel, Share on Vimeo
 
 Ensure the mindmap is hierarchical, well-organized, and covers the most critical and relevant aspects of the topic.  
 Include up to four levels of markdown hierarchy (never use a fifth level, such as #####).  
