@@ -41,60 +41,14 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 204,
 }
-//3. Debugging Middleware
-//Add a debugging middleware to log all incoming requests:
 
-// Add this before your routes
+// Debugging Middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log('Origin:', req.headers.origin);
   console.log('Referer:', req.headers.referer);
   next();
 });
-//4. Explicit Error Response Format
-//Make sure your error responses are consistent:
-
-app.post("/generate-mindmap", async (req, res) => {
-  try {
-    // ... existing code ...
-  } catch (error) {
-    console.error("Error generating mindmap:", error);
-    
-    // More detailed error response
-    res.status(500).json({
-      error: "Failed to generate mindmap",
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-//5. Health Check Enhancement
-//Improve your health check to verify the API key is set:
-
-app.get("/", (req, res) => {
-  const apiKeyConfigured = !!process.env.GROK_API_KEY;
-  
-  res.status(200).json({ 
-    status: "ok", 
-    message: "Mindmap Backend API is running",
-    apiKeyConfigured: apiKeyConfigured,
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-//6. Preflight Request Handling
-//Ensure your OPTIONS handling is correct:
-
-// This should be before your routes
-app.options('*', cors(corsOptions));
-// Recommendation
-// After making these changes, deploy your backend and test it with a simple request. You can use a tool like Postman or a simple curl command to test the API directly:
-
-curl -X POST https://mindmap-backend-five.vercel.app/generate-mindmap \
-  -H "Content-Type: application/json" \
-  -d '{"topic":"test topic"}'
-// This will help you determine if the issue is with your backend configuration or with how the frontend is making the request.
-
-Chat Input
 
 // Apply CORS middleware
 app.use(cors(corsOptions))
@@ -111,81 +65,178 @@ const limiter = rateLimit({
 // Apply rate limiting to all requests
 app.use(limiter)
 
-
 // Initialize OpenAI client for Grok API
 const openai = new OpenAI({
   apiKey: process.env.GROK_API_KEY,
   baseURL: "https://api.x.ai/v1",
 })
 
+// Configuration for different detail levels
+const DETAIL_LEVELS = {
+  normal: {
+    name: "Normal",
+    maxTokens: 1200,
+    systemMessage: "You are a helpful assistant that creates BASIC, SIMPLE mindmaps. Keep the fourth level to 1-3 words maximum. Be concise and minimal.",
+    description: "Minimal detail, 1-3 words at lowest level"
+  },
+  detailed: {
+    name: "Detailed", 
+    maxTokens: 2500,
+    systemMessage: "You are a helpful assistant that creates DETAILED mindmaps with good examples and specifics. Provide helpful ranges, examples, and moderate detail at the fourth level.",
+    description: "Good examples with specific ranges and details"
+  },
+  ultra: {
+    name: "Ultra Detailed",
+    maxTokens: 4000,
+    systemMessage: "You are a helpful assistant that creates ULTRA-DETAILED, COMPREHENSIVE mindmaps. Be extremely specific with names, prices, companies, step-by-step instructions, and extensive details at the fourth level.",
+    description: "Extremely comprehensive with specific names, prices, and step-by-step details"
+  }
+}
+
+// Function to generate prompt based on detail level
+const generatePrompt = (topic, detailLevel) => {
+  const config = DETAIL_LEVELS[detailLevel] || DETAIL_LEVELS.normal
+  
+  if (detailLevel === 'normal') {
+    return `Create a BASIC mindmap in markdown format for the topic "${topic}".
+
+IMPORTANT: Keep this SIMPLE and CONCISE. This is the "normal" version - use minimal detail.
+
+Format requirements:
+- Use # for main topic
+- Use ## for main branches (4-6 branches maximum)
+- Use ### for sub-branches (2-3 per branch maximum)  
+- Use #### for brief points only (1-2 words or very short phrases)
+
+Example for "Plan a Wedding Event":
+# Plan a Wedding Event
+## Planning
+### Budget
+#### Venue costs
+#### Food costs
+### Guest List
+#### Family
+#### Friends
+## Event Day
+### Ceremony
+#### Timing
+#### Officiant
+### Reception  
+#### Food
+#### Music
+
+Keep all fourth-level items to 1-3 words maximum. Be concise and basic.`
+  }
+  
+  if (detailLevel === 'detailed') {
+    return `Create a DETAILED mindmap in markdown format for the topic "${topic}".
+
+This is the "detailed" version - provide good examples and specifics.
+
+Format requirements:
+- Use # for main topic
+- Use ## for main branches (6-8 branches)
+- Use ### for sub-branches (3-4 per branch)
+- Use #### for specific examples with some detail
+
+Example for "Plan a Wedding Event":
+# Plan a Wedding Event
+## Pre-Wedding Planning
+### Budgeting
+#### Venue: $3000-8000 depending on location
+#### Catering: $40-60 per person for dinner
+#### Photography: $1000-3000 professional package
+### Venue Selection
+#### Outdoor: Parks, gardens, beaches
+#### Indoor: Hotels, churches, event halls
+### Guest Management
+#### Create guest list of 50-150 people
+#### Send invitations 6-8 weeks early
+## Wedding Day Logistics
+### Ceremony Setup
+#### 30-60 minute ceremony duration
+#### Hire officiant (religious or civil)
+#### Arrange seating for guests
+### Reception Planning
+#### Choose buffet or plated dinner service
+#### Book DJ or live band entertainment
+#### Plan first dance and special moments
+
+Provide helpful specifics and ranges at the fourth level.`
+  }
+  
+  if (detailLevel === 'ultra') {
+    return `Create an ULTRA-DETAILED comprehensive mindmap in markdown format for the topic "${topic}".
+
+This is the "ultra" version - be extremely comprehensive with specific examples, prices, names, and detailed steps.
+
+Format requirements:
+- Use # for main topic
+- Use ## for main branches (8-12 branches)
+- Use ### for sub-branches (4-6 per branch)
+- Use #### for very specific details, examples, prices, company names, step-by-step instructions
+
+Example for "Plan a Wedding Event":
+# Plan a Wedding Event
+## Pre-Wedding Planning Phase
+### Comprehensive Budgeting
+#### Venue Costs: $5000 for Lakeside Pavilion, $3000 for Historic Church Hall, $8000 for Grand Hotel Ballroom
+#### Catering Services: $50 per person for Italian buffet with pasta station, $2000 for three-tier wedding cake from Sweet Dreams Bakery
+#### Photography Package: Jane Doe Photography $1500 includes 6 hours coverage and 200 edited photos, videographer add-on $800
+#### Floral Arrangements: $1200 for bridal bouquet, bridesmaids bouquets, and centerpieces from Bloom & Blossom Florists
+### Detailed Venue Selection Process
+#### Outdoor Venue Options: Lakeside Park available June-September, Botanical Gardens with rose ceremony arch, Beach venue requires tent rental $600
+#### Indoor Venue Alternatives: Grand Hotel Ballroom seats 150 guests with chandelier lighting, Historic Church with organ music included
+#### Venue Booking Timeline: Reserve 12 months ahead for popular venues, pay 50% deposit to secure date, final payment due 30 days before event
+### Complete Guest Management System
+#### Family Guest List: Invite 50 immediate family members, create RSVP tracking spreadsheet, send save-the-dates 4 months early
+#### Friends and Colleagues: 30 close friends from college, 20 work colleagues, use digital invitations through Paperless Post to save costs
+#### Guest Accommodation: Block 20 hotel rooms at nearby Marriott, provide welcome bags with local treats and wedding timeline
+
+Be extremely specific with names, prices, timeframes, and step-by-step details at the fourth level.`
+  }
+}
+
 // Health check endpoint
 app.get("/", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Mindmap Backend API is running", environment: process.env.NODE_ENV || 'production' });
+  const apiKeyConfigured = !!process.env.GROK_API_KEY;
+  
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Mindmap Backend API is running",
+    apiKeyConfigured: apiKeyConfigured,
+    environment: process.env.NODE_ENV || 'development',
+    availableDetailLevels: Object.keys(DETAIL_LEVELS).map(key => ({
+      key,
+      name: DETAIL_LEVELS[key].name,
+      maxTokens: DETAIL_LEVELS[key].maxTokens
+    })),
+    endpoints: [
+      "POST /generate-mindmap - With optional detailLevel parameter (normal, detailed, ultra)"
+    ]
+  });
 });
 
-// Mindmap generation endpoint
+// Main mindmap generation endpoint with detail level support
 app.post("/generate-mindmap", async (req, res) => {
   try {
-    const { topic } = req.body
+    const { topic, detailLevel = "normal" } = req.body
 
     if (!topic) {
       return res.status(400).json({ error: "Topic is required" })
     }
 
-    console.log(`Generating mindmap for topic: ${topic}`)
+    if (!DETAIL_LEVELS[detailLevel]) {
+      return res.status(400).json({ 
+        error: "Invalid detail level", 
+        validLevels: Object.keys(DETAIL_LEVELS)
+      })
+    }
 
-    // Create the prompt for the Grok API
-    const prompt = `Create a comprehensive mindmap in markdown format for the topic "${topic}".
-    
-Format the mindmap as follows:
-Use a single # for the main topic (the title).  
-Use ## for main branches (key categories).  
-Use ### for sub-branches (subcategories).  
-Use #### for details or examples under sub-branches.
+    const config = DETAIL_LEVELS[detailLevel]
+    console.log(`Generating ${config.name} mindmap for topic: ${topic}`)
 
- 
-
-For example, for "Plan a Wedding Event":
-
-# Plan a Wedding Event
-## Pre-Wedding Planning
-### Budgeting
-#### Venue Costs: $5000 for Lakeside Venue, $3000 for Indoor Hall
-#### Catering: $50 per Person for Buffet, $2000 for Cake
-### Venue Selection
-#### Outdoor Options: Lakeside Park in June, Botanical Gardens
-#### Indoor Options: Grand Hotel Ballroom, Historic Church Hall
-### Guest List
-#### Family: Invite 50 Relatives, Create RSVP System
-#### Friends: Invite 30 Close Friends, Send Digital Invites
-## Wedding Day Logistics
-### Ceremony
-#### Timing: 11 AM Start, 30-Minute Vows
-#### Officiant: Hire Local Priest, Prepare Custom Vows
-### Reception
-#### Food: Italian Buffet with Pasta Station, Vegan Options
-#### Entertainment: Live Band (The Harmony Strings), First Dance at 7 PM
-### Photography
-#### Photographer: Book Jane Doe Photography, $1500 Package
-#### Videographer: Hire John Smith Films, Capture Drone Shots
-## Post-Wedding
-### Thank You Notes
-#### Timing: Send Within 1 Month, Use Custom Stationery
-#### Gifts: Include Small Tokens, Mention Specific Gifts in Notes
-### Honeymoon Planning
-#### Destination: Santorini for 7 Days, Paris for 5 Days
-#### Activities: Sunset Cruise in Santorini, Eiffel Tower Dinner
-### Memory Preservation
-#### Album: Create Shutterfly Photo Book, Include 100 Photos
-#### Video: Edit Highlight Reel, Share on Vimeo
-
-Ensure the mindmap is hierarchical, well-organized, and covers the most critical and relevant aspects of the topic.  
-Include up to four levels of markdown hierarchy (never use a fifth level, such as #####).  
-At the fourth level (####), include as many specific examples or details as relevant to illustrate the sub-branch.  
-The markdown must be clean, properly formatted, and compatible with rendering in the Markmap library (e.g., no extra spaces, comments, or non-markdown text).  
-Do not include introductory or summary comments (e.g., "Here is a detailed mindmap on [Topic]"). Only output the structured markdown.  
-Focus on creating a mindmap that enhances understanding by breaking down the topic into its core components and showing clear relationships between them.  
-Mindmaps are visual tools for capturing, organizing, and visualizing ideas, often used for brainstorming, note-taking, problem-solving, decision-making, or as a study aid. Ensure the structure supports these purposes.`
+    const prompt = generatePrompt(topic, detailLevel)
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
@@ -193,12 +244,12 @@ Mindmaps are visual tools for capturing, organizing, and visualizing ideas, ofte
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that creates well-structured mindmaps in markdown format.",
+          content: config.systemMessage,
         },
         { role: "user", content: prompt },
       ],
       temperature: 0.2,
-      max_tokens: 3000,
+      max_tokens: config.maxTokens,
     })
 
     // Extract the markdown from the response
@@ -209,22 +260,37 @@ Mindmaps are visual tools for capturing, organizing, and visualizing ideas, ofte
     }
 
     // Return the markdown to the frontend
-    res.status(200).json({ markdown })
+    res.status(200).json({ 
+      markdown,
+      detailLevel,
+      detailLevelName: config.name,
+      tokensUsed: completion.usage?.total_tokens || "unknown",
+      maxTokensAllowed: config.maxTokens
+    })
   } catch (error) {
-    console.error("Error generating mindmap:", error)
+    console.error(`Error generating ${req.body.detailLevel || 'normal'} mindmap:`, error)
     res.status(500).json({
       error: "Failed to generate mindmap",
-      details: error.message,
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
 })
 
-// Handle OPTIONS requests explicitly
-app.options("/generate-mindmap", cors(corsOptions), (req, res) => {
-  res.status(204).send()
+// Legacy endpoints for backward compatibility
+app.post("/generate-mindmap-ultra", async (req, res) => {
+  req.body.detailLevel = "ultra"
+  return app._router.handle({ ...req, url: "/generate-mindmap", method: "POST" }, res)
 })
+
+// Handle OPTIONS requests explicitly
+app.options("*", cors(corsOptions))
 
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
+  console.log('Available detail levels:')
+  Object.entries(DETAIL_LEVELS).forEach(([key, config]) => {
+    console.log(`- ${key}: ${config.name} (${config.maxTokens} tokens)`)
+  })
 })
