@@ -213,21 +213,35 @@ app.post("/generate-mindmap", async (req, res) => {
   try {
     const { topic, detailLevel = "normal" } = req.body
 
+    // Enhanced debugging
+    console.log("=== REQUEST DEBUGGING ===")
+    console.log("Full request body:", JSON.stringify(req.body, null, 2))
+    console.log("Extracted topic:", topic)
+    console.log("Extracted detailLevel:", detailLevel)
+    console.log("detailLevel type:", typeof detailLevel)
+    console.log("=========================")
+
     if (!topic) {
       return res.status(400).json({ error: "Topic is required" })
     }
 
     if (!DETAIL_LEVELS[detailLevel]) {
+      console.log("Invalid detail level received:", detailLevel)
+      console.log("Available levels:", Object.keys(DETAIL_LEVELS))
       return res.status(400).json({ 
         error: "Invalid detail level", 
+        received: detailLevel,
         validLevels: Object.keys(DETAIL_LEVELS)
       })
     }
 
     const config = DETAIL_LEVELS[detailLevel]
     console.log(`Generating ${config.name} mindmap for topic: ${topic} using model: ${config.model}`)
+    console.log("Using config:", JSON.stringify(config, null, 2))
 
     const prompt = generatePrompt(topic, detailLevel)
+    console.log("Generated prompt length:", prompt.length)
+    console.log("Prompt preview:", prompt.substring(0, 200) + "...")
 
     // Call Claude API
     const message = await anthropic.messages.create({
@@ -250,6 +264,9 @@ app.post("/generate-mindmap", async (req, res) => {
       throw new Error("Failed to generate mindmap content")
     }
 
+    console.log("Generated markdown length:", markdown.length)
+    console.log("Generated markdown preview:", markdown.substring(0, 200) + "...")
+
     // Return the markdown to the frontend
     res.status(200).json({ 
       markdown,
@@ -259,7 +276,14 @@ app.post("/generate-mindmap", async (req, res) => {
       tokensUsed: message.usage?.input_tokens + message.usage?.output_tokens || "unknown",
       inputTokens: message.usage?.input_tokens || 0,
       outputTokens: message.usage?.output_tokens || 0,
-      maxTokensAllowed: config.maxTokens
+      maxTokensAllowed: config.maxTokens,
+      // Add debugging info to response
+      debug: {
+        receivedDetailLevel: detailLevel,
+        promptLength: prompt.length,
+        responseLength: markdown.length,
+        modelUsed: config.model
+      }
     })
   } catch (error) {
     console.error(`Error generating ${req.body.detailLevel || 'normal'} mindmap:`, error)
@@ -269,7 +293,7 @@ app.post("/generate-mindmap", async (req, res) => {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
-})
+}))
 
 // Handle OPTIONS requests explicitly
 app.options("*", cors(corsOptions))
