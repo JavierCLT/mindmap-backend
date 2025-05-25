@@ -1,309 +1,100 @@
-import express from "express"
-import cors from "cors"
-import dotenv from "dotenv"
-import Anthropic from "@anthropic-ai/sdk"
-import rateLimit from "express-rate-limit"
+// Enhanced generatePrompt function with clearer differentiation
+const generatePrompt = (topic, detailLevel) => {
+  if (detailLevel === 'normal') {
+    return `Create a BASIC mindmap in markdown format for the topic "${topic}".
 
-// Load environment variables
-dotenv.config()
+STRICT REQUIREMENTS FOR NORMAL DETAIL LEVEL:
+- Keep this EXTREMELY simple and minimal
+- Use # for main topic
+- Use ## for main branches (4 maximum)
+- Use ### for sub-branches (2 maximum per branch)
+- Use #### for brief points (1-2 words ONLY)
+- NO descriptions, NO examples, NO explanations
+- Total mindmap should be under 15 lines
 
-const app = express()
-const PORT = process.env.PORT || 3001
+Example:
+# Topic
+## Branch1
+### Sub1
+#### Word1
+#### Word2
+### Sub2
+#### Word3
+## Branch2
+### Sub3
+#### Word4
 
-// Middleware
-app.use(express.json())
+Be extremely concise. ONE OR TWO WORDS ONLY for fourth level.`
+  }
+  
+  if (detailLevel === 'detailed') {
+    return `Create a DETAILED mindmap in markdown format for the topic "${topic}".
 
-// Configure CORS to be more permissive
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, etc)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'https://javierclt.github.io',
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://www.mind-map-maker.com',
-      'https://mind-map-maker.com',
-      'http://www.mind-map-maker.com',
-      'http://mind-map-maker.com'
-    ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('vercel.app')) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked for origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ["POST", "GET", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  optionsSuccessStatus: 204,
+REQUIREMENTS FOR DETAILED LEVEL:
+- Provide helpful examples and practical details
+- Use # for main topic
+- Use ## for main branches (6-8 branches)
+- Use ### for sub-branches (3-4 per branch)
+- Use #### for specific details (10-20 words each)
+- Include practical examples, ranges, and helpful tips
+- Total mindmap should be 40-60 lines
+
+Example fourth-level format:
+#### Budget planning: Set aside 10-15% of income, use apps like Mint or YNAB
+#### Time management: Use Pomodoro technique (25 min work, 5 min break)
+#### Tools needed: Hammer, screwdriver set, level, measuring tape
+
+Include practical information, specific recommendations, and useful details.`
+  }
+  
+  if (detailLevel === 'ultra') {
+    return `Create an ULTRA-DETAILED, COMPREHENSIVE mindmap in markdown format for the topic "${topic}".
+
+REQUIREMENTS FOR ULTRA DETAIL LEVEL:
+- Be EXTREMELY comprehensive and exhaustive
+- Use # for main topic
+- Use ## for main branches (10-12 branches minimum)
+- Use ### for sub-branches (4-6 per branch)
+- Use #### for very detailed information (20-40 words each)
+- Include:
+  * Exact prices with multiple vendor options
+  * Step-by-step instructions with timing
+  * Specific company/product names with alternatives
+  * Real-world examples with outcomes
+  * Common pitfalls and how to avoid them
+  * Expert tips and industry secrets
+- Total mindmap should be 80-120+ lines
+
+Example fourth-level format:
+#### Professional photographers: Jane Smith Photography ($2500 for 8 hours), PhotoPro Studios ($1800 for 6 hours), budget option: college student photographers ($500-800)
+#### Venue booking timeline: Book 12-18 months ahead for popular venues, 6-9 months for standard venues, negotiate 10-15% discount for off-season dates
+#### DIY centerpiece tutorial: Buy wholesale flowers from Costco ($150 for 20 tables), arrange in mason jars ($40), add battery LED lights ($30), total time: 4 hours with 2 helpers
+
+Be exhaustively detailed with multiple options, exact specifications, and comprehensive guidance.`
+  }
 }
 
-// Debugging Middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  console.log('Origin:', req.headers.origin);
-  console.log('Referer:', req.headers.referer);
-  next();
-});
-
-// Apply CORS middleware
-app.use(cors(corsOptions))
-
-// Configure rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // limit each IP to 30 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: "Too many requests, please try again after 15 minutes"
-})
-
-// Apply rate limiting to all requests
-app.use(limiter)
-
-// Initialize Claude client
-const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY, // You'll need to set this in your environment
-})
-
-// Configuration for different detail levels
+// Also update the systemMessage in DETAIL_LEVELS for better differentiation:
 const DETAIL_LEVELS = {
   normal: {
     name: "Normal",
     maxTokens: 1500,
-    model: "claude-3-5-haiku-20241022", // Latest Haiku for basic requests
-    systemMessage: "You are a helpful assistant that creates concise, well-structured mindmaps. For normal detail level, keep fourth-level items brief and essential - use only 1-3 words or very short phrases.",
-    description: "Basic overview with minimal detail"
+    model: "claude-3-5-haiku-20241022",
+    systemMessage: "You are creating a MINIMAL mindmap. Be EXTREMELY concise. Use only 1-2 words for fourth-level items. NO descriptions, NO examples, NO explanations. Keep the entire mindmap under 15 lines total.",
+    description: "Bare minimum overview - keywords only"
   },
   detailed: {
     name: "Detailed", 
     maxTokens: 3000,
-    model: "claude-3-7-sonnet-20250219", // Latest Sonnet 3.7 for detailed requests
-    systemMessage: "You are a helpful assistant that creates comprehensive mindmaps with good detail. For detailed level, provide helpful examples, ranges, and specific information at the fourth level.",
-    description: "Comprehensive with good examples and specifics"
+    model: "claude-3-7-sonnet-20250219",
+    systemMessage: "You are creating a DETAILED mindmap. Provide practical examples, useful ranges, and helpful specifics. Fourth-level items should be 10-20 words with actionable information. Aim for 40-60 total lines.",
+    description: "Comprehensive with practical examples and recommendations"
   },
   ultra: {
     name: "Ultra Detailed",
     maxTokens: 4000,
-    model: "claude-sonnet-4-20250514", // Latest Sonnet 4 for ultra-detailed requests
-    systemMessage: "You are a helpful assistant that creates extremely detailed, comprehensive mindmaps. For ultra detail level, provide extensive specific examples, exact prices, company names, step-by-step instructions, and comprehensive details at the fourth level.",
-    description: "Extremely comprehensive with specific examples and details"
+    model: "claude-sonnet-4-20250514",
+    systemMessage: "You are creating an ULTRA-DETAILED mindmap. Be EXHAUSTIVE. Include exact prices from multiple vendors, step-by-step instructions, specific company names, real examples, common mistakes, and expert tips. Fourth-level items should be 20-40 words each. Create 80-120+ lines total.",
+    description: "Exhaustive guide with everything you need to know"
   }
 }
-
-// Function to generate prompt based on detail level
-const generatePrompt = (topic, detailLevel) => {
-  if (detailLevel === 'normal') {
-    return `Create a basic mindmap in markdown format for the topic "${topic}".
-
-REQUIREMENTS FOR NORMAL DETAIL LEVEL:
-- Keep this simple and concise
-- Use # for main topic
-- Use ## for main branches (4-6 maximum)
-- Use ### for sub-branches (2-3 per branch)
-- Use #### for brief points ONLY (1-3 words maximum)
-
-Example structure:
-# Plan a Wedding Event
-## Planning
-### Budget
-#### Venue costs
-#### Catering
-### Guests
-#### Family list
-#### Friend list
-## Event Day
-### Ceremony
-#### Timing
-#### Officiant
-### Reception
-#### Food service
-#### Entertainment
-
-Keep ALL fourth-level items to 1-3 words. Be minimal and concise.`
-  }
-  
-  if (detailLevel === 'detailed') {
-    return `Create a detailed mindmap in markdown format for the topic "${topic}".
-
-REQUIREMENTS FOR DETAILED LEVEL:
-- Provide good examples and specifics
-- Use # for main topic
-- Use ## for main branches (6-8 branches)
-- Use ### for sub-branches (3-4 per branch)
-- Use #### for specific examples with helpful detail
-
-Example structure:
-# Plan a Wedding Event
-## Pre-Wedding Planning
-### Budgeting
-#### Venue: $3000-8000 depending on location
-#### Catering: $40-60 per person for dinner
-#### Photography: $1000-3000 professional package
-### Guest Management
-#### Create list of 50-150 people
-#### Send invitations 6-8 weeks early
-#### Track RSVPs with spreadsheet
-## Wedding Day Logistics
-### Ceremony Setup
-#### 30-60 minute ceremony duration
-#### Hire officiant (religious or civil)
-#### Arrange seating for 100+ guests
-
-Provide helpful specifics, ranges, and practical examples at the fourth level.`
-  }
-  
-  if (detailLevel === 'ultra') {
-    return `Create an ultra-detailed comprehensive mindmap in markdown format for the topic "${topic}".
-
-REQUIREMENTS FOR ULTRA DETAIL LEVEL:
-- Be extremely comprehensive and specific
-- Use # for main topic
-- Use ## for main branches (8-12 branches)
-- Use ### for sub-branches (4-6 per branch)
-- Use #### for very specific details with exact examples
-
-Example structure:
-# Plan a Wedding Event
-## Pre-Wedding Planning Phase
-### Comprehensive Budgeting
-#### Venue Costs: $5000 for Lakeside Pavilion, $3000 for Historic Church Hall, $8000 for Grand Hotel Ballroom
-#### Catering Services: $50 per person for Italian buffet with pasta station, $2000 for three-tier cake from Sweet Dreams Bakery
-#### Photography: Jane Doe Photography $1500 for 6 hours plus 200 edited photos, videographer upgrade $800
-### Detailed Venue Selection
-#### Outdoor Options: Lakeside Park (June-Sept availability), Botanical Gardens with rose arch, Beach venue requires $600 tent rental
-#### Indoor Alternatives: Grand Hotel Ballroom seats 150 with chandelier lighting, Historic Church includes organ music
-### Complete Guest Management
-#### Family Invitations: 50 immediate family members, create RSVP tracking in Google Sheets, mail save-the-dates 4 months prior
-#### Friends and Colleagues: 30 college friends, 20 work colleagues, use Paperless Post digital invites to save $200
-
-Be extremely specific with exact prices, company names, timeframes, and step-by-step instructions.`
-  }
-}
-
-// Health check endpoint
-app.get("/", (req, res) => {
-  const apiKeyConfigured = !!process.env.CLAUDE_API_KEY;
-  
-  res.status(200).json({ 
-    status: "ok", 
-    message: "Mindmap Backend API is running with Claude",
-    apiProvider: "Anthropic Claude",
-    apiKeyConfigured: apiKeyConfigured,
-    environment: process.env.NODE_ENV || 'development',
-    availableDetailLevels: Object.keys(DETAIL_LEVELS).map(key => ({
-      key,
-      name: DETAIL_LEVELS[key].name,
-      model: DETAIL_LEVELS[key].model,
-      maxTokens: DETAIL_LEVELS[key].maxTokens,
-      description: DETAIL_LEVELS[key].description
-    })),
-    endpoints: [
-      "POST /generate-mindmap - With optional detailLevel parameter (normal, detailed, ultra)"
-    ]
-  });
-});
-
-// Main mindmap generation endpoint with Claude
-app.post("/generate-mindmap", async (req, res) => {
-  try {
-    const { topic, detailLevel = "normal" } = req.body
-
-    // Enhanced debugging
-    console.log("=== REQUEST DEBUGGING ===")
-    console.log("Full request body:", JSON.stringify(req.body, null, 2))
-    console.log("Extracted topic:", topic)
-    console.log("Extracted detailLevel:", detailLevel)
-    console.log("detailLevel type:", typeof detailLevel)
-    console.log("=========================")
-
-    if (!topic) {
-      return res.status(400).json({ error: "Topic is required" })
-    }
-
-    if (!DETAIL_LEVELS[detailLevel]) {
-      console.log("Invalid detail level received:", detailLevel)
-      console.log("Available levels:", Object.keys(DETAIL_LEVELS))
-      return res.status(400).json({ 
-        error: "Invalid detail level", 
-        received: detailLevel,
-        validLevels: Object.keys(DETAIL_LEVELS)
-      })
-    }
-
-    const config = DETAIL_LEVELS[detailLevel]
-    console.log(`Generating ${config.name} mindmap for topic: ${topic} using model: ${config.model}`)
-    console.log("Using config:", JSON.stringify(config, null, 2))
-
-    const prompt = generatePrompt(topic, detailLevel)
-    console.log("Generated prompt length:", prompt.length)
-    console.log("Prompt preview:", prompt.substring(0, 200) + "...")
-
-    // Call Claude API
-    const message = await anthropic.messages.create({
-      model: config.model,
-      max_tokens: config.maxTokens,
-      temperature: 0.2,
-      system: config.systemMessage,
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ]
-    })
-
-    // Extract the markdown from the response
-    const markdown = message.content[0]?.text || ""
-
-    if (!markdown) {
-      throw new Error("Failed to generate mindmap content")
-    }
-
-    console.log("Generated markdown length:", markdown.length)
-    console.log("Generated markdown preview:", markdown.substring(0, 200) + "...")
-
-    // Return the markdown to the frontend
-    res.status(200).json({ 
-      markdown,
-      detailLevel,
-      detailLevelName: config.name,
-      model: config.model,
-      tokensUsed: message.usage?.input_tokens + message.usage?.output_tokens || "unknown",
-      inputTokens: message.usage?.input_tokens || 0,
-      outputTokens: message.usage?.output_tokens || 0,
-      maxTokensAllowed: config.maxTokens,
-      // Add debugging info to response
-      debug: {
-        receivedDetailLevel: detailLevel,
-        promptLength: prompt.length,
-        responseLength: markdown.length,
-        modelUsed: config.model
-      }
-    })
-  } catch (error) {
-    console.error(`Error generating ${req.body.detailLevel || 'normal'} mindmap:`, error)
-    res.status(500).json({
-      error: "Failed to generate mindmap",
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    })
-  }
-}))
-
-// Handle OPTIONS requests explicitly
-app.options("*", cors(corsOptions))
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log('Using Anthropic Claude API')
-  console.log('Available detail levels:')
-  Object.entries(DETAIL_LEVELS).forEach(([key, config]) => {
-    console.log(`- ${key}: ${config.name} (${config.model}, ${config.maxTokens} tokens)`)
-  })
-})
