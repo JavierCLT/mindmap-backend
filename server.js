@@ -189,7 +189,7 @@ Mindmaps are visual tools for capturing, organizing, and visualizing ideas, ofte
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
-      model: "grok-beta",
+      model: "grok-4-latest",
       messages: [
         {
           role: "system",
