@@ -69,7 +69,7 @@ Your goal is to help users understand topics`;
 
     // Call the Grok API
     const completion = await openai.chat.completions.create({
-      model: "grok-beta",
+      model: "grok-4-latest",
       messages: [
         {
           role: "system",
