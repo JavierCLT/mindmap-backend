@@ -115,7 +115,7 @@ app.use(limiter)
 // Initialize OpenAI client for Grok API
 const openai = new OpenAI({
   apiKey: process.env.GROK_API_KEY,
-  baseURL: "https://api.x.ai/v1",
+  baseURL: "https://api.x.ai/v1/chat/completions",
 })
 
 // Health check endpoint
