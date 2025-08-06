@@ -1,3 +1,4 @@
+// server.ts (Node 18+, "type": "module" or use .js)
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -9,10 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- Middleware ---
-app.use(express.json());
-
-// CORS (allow specific origins + any *.vercel.app)
+// ---------- CORS ----------
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) return callback(null, true);
@@ -38,7 +36,11 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// Request logging
+app.use(express.json());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+// ---------- Logs ----------
 app.use((req, _res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log("Origin:", req.headers.origin);
@@ -46,13 +48,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Preflight
-app.options("*", cors(corsOptions));
-
-// Apply CORS
-app.use(cors(corsOptions));
-
-// Rate limiting
+// ---------- Rate limit ----------
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
@@ -62,136 +58,284 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// --- Anthropic (Claude) client ---
+// ---------- Anthropic client ----------
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+const DEFAULT_MODEL =
+  process.env.CLAUDE_MODEL || "claude-opus-4-1-20250805"; // Set your preferred current Claude id
 
-// Health check
-app.get("/", (req, res) => {
-  const apiKeyConfigured = !!process.env.ANTHROPIC_API_KEY;
+// ---------- Utility: robust JSON extraction ----------
+function extractJson(text: string): any {
+  if (!text) return null;
+  // Try direct parse
+  try { return JSON.parse(text); } catch {}
+  // Fallback: extract first {...} block
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    const snippet = text.slice(start, end + 1);
+    try { return JSON.parse(snippet); } catch {}
+  }
+  return null;
+}
+
+// ---------- Prompts ----------
+const SYSTEM_JSON_ONLY =
+  "You produce structured outputs only. Do not include explanations, notes, or reasoning. When asked for JSON, output strictly valid, minified JSON and nothing else.";
+
+function outlinePrompt(topic: string, audience?: string, tone?: string, depth = 4, examplesPerLeaf = 3) {
+  return `
+You will propose a comprehensive outline for a Markmap mindmap as JSON. Do not include prose.
+
+Schema:
+{
+  "title": string,
+  "depth": 2|3|4,
+  "branches": [
+    {
+      "name": string,
+      "summary": string,
+      "sub": [
+        {
+          "name": string,
+          "summary": string,
+          "sub": [
+            {
+              "name": string,
+              "summary": string
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Requirements:
+- Topic: "${topic}"
+- Audience: ${JSON.stringify(audience || "general")}
+- Tone: ${JSON.stringify(tone || "neutral, clear")}
+- Max depth: ${Math.max(2, Math.min(4, depth))}
+- Coverage should be broad first (breadth), then deep (depth) where relevant.
+- Avoid brand-new statistics. If examples are used in summaries, keep them generic and non-fabricated.
+
+Return only JSON that matches the schema.`;
+}
+
+function coveragePassPrompt(topic: string, currentJson: any) {
+  return `
+You will improve the outline JSON to maximize coverage.
+
+Rubric to check:
+- Foundations: definitions, history/context, key terms, core concepts
+- Frameworks & models (where relevant)
+- Processes/workflows/architecture
+- Tools & techniques
+- Data/metrics/benchmarks (generic descriptions only, no invented stats)
+- Risks, limitations, ethics, compliance
+- Use cases, scenarios, case-type examples
+- Comparisons & decision criteria
+- Implementation tips & best practices
+- Maintenance/monitoring/improvement loops
+- Common pitfalls & anti-patterns
+
+Input JSON:
+${JSON.stringify(currentJson)}
+
+Task:
+1) Add missing major categories or subtopics across the rubric (do not bloat with trivial items).
+2) Keep depth ≤ the input "depth".
+3) Keep summaries concise and useful.
+4) Maintain valid schema and return JSON only.`;
+}
+
+function enrichLeavesPrompt(topic: string, currentJson: any, examplesPerLeaf: number) {
+  return `
+You will enrich leaf nodes by adding concrete examples/checklists where useful (generic, non-fabricated).
+
+Input JSON:
+${JSON.stringify(currentJson)}
+
+Task:
+- For nodes at maximum depth in the tree, enhance the "summary" with:
+  • brief example(s) (e.g., "Example: ...")
+  • succinct checklist bullets inline (e.g., "Checklist: ...; ...; ...")
+- Use ${Math.max(1, Math.min(5, examplesPerLeaf))} example(s) max per leaf.
+- Keep writing concise and practical.
+- Return JSON only, same schema.`;
+}
+
+function renderMarkdownPrompt(currentJson: any, includeFAQ: boolean, includeGlossary: boolean) {
+  return `
+Convert the following outline JSON to Markmap-compatible Markdown.
+
+Rules:
+- Use exactly # for title, ## for level 2, ### for level 3, #### for level 4.
+- No level 5 headings.
+- No preamble, no comments, Markdown only.
+- Include summaries on the same line after the heading name using "—" (em dash).
+- After rendering the main tree, ${includeFAQ ? "append a '## FAQ' section with 6–10 **succinct** Q&A (### question, #### short answer)." : "do not add FAQ."}
+- ${includeGlossary ? "Append a '## Glossary' (### term, #### 1-line definition) with 10–20 key terms." : "Do not add a Glossary."}
+
+Input JSON:
+${JSON.stringify(currentJson)}
+
+Output:
+Clean Markdown only.`;
+}
+
+// ---------- Orchestrator ----------
+async function generateComprehensiveMindmap({
+  topic,
+  model = DEFAULT_MODEL,
+  depth = 4,
+  examplesPerLeaf = 3,
+  includeFAQ = true,
+  includeGlossary = true,
+  audience,
+  tone,
+  maxTokens = 3000,
+  temperature = 0.2,
+}: {
+  topic: string;
+  model?: string;
+  depth?: 2 | 3 | 4;
+  examplesPerLeaf?: number;
+  includeFAQ?: boolean;
+  includeGlossary?: boolean;
+  audience?: string;
+  tone?: string;
+  maxTokens?: number;
+  temperature?: number;
+}) {
+  // 1) Initial outline
+  const outlineResp = await anthropic.messages.create({
+    model,
+    system: SYSTEM_JSON_ONLY,
+    messages: [{ role: "user", content: outlinePrompt(topic, audience, tone, depth, examplesPerLeaf) }],
+    temperature,
+    max_tokens: 1500,
+  });
+  let outline = extractJson(outlineResp.content?.[0]?.type === "text" ? outlineResp.content?.[0]?.text : (outlineResp.content || []).map(b => b.type === "text" ? b.text : "").join("\n"));
+  if (!outline) throw new Error("Could not parse outline JSON from Claude.");
+
+  // 2) Coverage pass
+  const coverageResp = await anthropic.messages.create({
+    model,
+    system: SYSTEM_JSON_ONLY,
+    messages: [{ role: "user", content: coveragePassPrompt(topic, outline) }],
+    temperature,
+    max_tokens: 1600,
+  });
+  let improved = extractJson(coverageResp.content?.[0]?.type === "text" ? coverageResp.content?.[0]?.text : (coverageResp.content || []).map(b => b.type === "text" ? b.text : "").join("\n"));
+  if (!improved) improved = outline;
+
+  // 3) Enrich leaves
+  const enrichResp = await anthropic.messages.create({
+    model,
+    system: SYSTEM_JSON_ONLY,
+    messages: [{ role: "user", content: enrichLeavesPrompt(topic, improved, examplesPerLeaf) }],
+    temperature,
+    max_tokens: 1600,
+  });
+  let enriched = extractJson(enrichResp.content?.[0]?.type === "text" ? enrichResp.content?.[0]?.text : (enrichResp.content || []).map(b => b.type === "text" ? b.text : "").join("\n"));
+  if (!enriched) enriched = improved;
+
+  // 4) Render to Markdown
+  const renderResp = await anthropic.messages.create({
+    model,
+    messages: [{ role: "user", content: renderMarkdownPrompt(enriched, includeFAQ, includeGlossary) }],
+    temperature,
+    max_tokens: maxTokens,
+  });
+
+  const markdown =
+    (renderResp.content || [])
+      .filter((b: any) => b.type === "text")
+      .map((b: any) => b.text)
+      .join("\n")
+      .trim();
+
+  const usage = {
+    outline: outlineResp.usage,
+    coverage: coverageResp.usage,
+    enrich: enrichResp.usage,
+    render: renderResp.usage,
+  };
+
+  if (!markdown) throw new Error("Claude returned no Markdown content.");
+
+  return { markdown, usage };
+}
+
+// ---------- Health check ----------
+app.get("/", (_req, res) => {
   res.status(200).json({
     status: "ok",
     message: "Mindmap Backend API is running",
-    apiKeyConfigured,
+    apiKeyConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+    model: DEFAULT_MODEL,
     environment: process.env.NODE_ENV || "development",
-    model: process.env.CLAUDE_MODEL || "claude-opus-4-1-20250805",
   });
 });
 
-// Mindmap generation
+// ---------- Mindmap endpoint ----------
 app.post("/generate-mindmap", async (req, res) => {
   try {
-    const { topic } = req.body;
+    const {
+      topic,
+      model,
+      depth = 4,
+      examplesPerLeaf = 3,
+      includeFAQ = true,
+      includeGlossary = true,
+      audience,
+      tone,
+      maxTokens = 3000,
+      temperature = 0.2,
+    } = req.body || {};
+
     if (!topic || typeof topic !== "string" || !topic.trim()) {
       return res.status(400).json({ error: "Topic is required" });
     }
 
-    console.log(`Generating mindmap for topic: ${topic}`);
+    console.log(`Generating comprehensive mindmap for topic: ${topic}`);
 
-    const prompt = `Create a comprehensive mindmap in markdown format for the topic "${topic}".
-
-Format the mindmap as follows:
-Use a single # for the main topic (the title).
-Use ## for main branches (key categories).
-Use ### for sub-branches (subcategories).
-Use #### for details or examples under sub-branches.
-
-For example, for "Plan a Wedding Event":
-
-# Plan a Wedding Event
-## Pre-Wedding Planning
-### Budgeting
-#### Venue Costs: $5000 for Lakeside Venue, $3000 for Indoor Hall
-#### Catering: $50 per Person for Buffet, $2000 for Cake
-### Venue Selection
-#### Outdoor Options: Lakeside Park in June, Botanical Gardens
-#### Indoor Options: Grand Hotel Ballroom, Historic Church Hall
-### Guest List
-#### Family: Invite 50 Relatives, Create RSVP System
-#### Friends: Invite 30 Close Friends, Send Digital Invites
-## Wedding Day Logistics
-### Ceremony
-#### Timing: 11 AM Start, 30-Minute Vows
-#### Officiant: Hire Local Priest, Prepare Custom Vows
-### Reception
-#### Food: Italian Buffet with Pasta Station, Vegan Options
-#### Entertainment: Live Band (The Harmony Strings), First Dance at 7 PM
-### Photography
-#### Photographer: Book Jane Doe Photography, $1500 Package
-#### Videographer: Hire John Smith Films, Capture Drone Shots
-## Post-Wedding
-### Thank You Notes
-#### Timing: Send Within 1 Month, Use Custom Stationery
-#### Gifts: Include Small Tokens, Mention Specific Gifts in Notes
-### Honeymoon Planning
-#### Destination: Santorini for 7 Days, Paris for 5 Days
-#### Activities: Sunset Cruise in Santorini, Eiffel Tower Dinner
-### Memory Preservation
-#### Album: Create Shutterfly Photo Book, Include 100 Photos
-#### Video: Edit Highlight Reel, Share on Vimeo
-
-Ensure the mindmap is hierarchical, well-organized, and covers the most critical and relevant aspects of the topic.
-Include up to four levels of markdown hierarchy (never use a fifth level, such as #####).
-At the fourth level (####), include as many specific examples or details as relevant to illustrate the sub-branch. Do not necessarily limit them to 2 examples.
-The markdown must be clean, properly formatted, and compatible with rendering in the Markmap library (e.g., no extra spaces, comments, or non-markdown text).
-Do not include introductory or summary comments. Only output the structured markdown.
-Focus on creating a mindmap that enhances understanding by breaking down the topic into its core components and showing clear relationships between them.`;
-
-    const model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514"; // see docs model list. :contentReference[oaicite:2]{index=2}
-
-    const message = await anthropic.messages.create({
+    const { markdown, usage } = await generateComprehensiveMindmap({
+      topic: topic.trim(),
       model,
-      max_tokens: 3000, // Anthropic param name is max_tokens. :contentReference[oaicite:3]{index=3}
-      temperature: 0.2,
-      system:
-        "You create well-structured mindmaps in clean markdown compatible with Markmap. Output only the markdown, no preface or commentary.",
-      messages: [
-        {
-          role: "user",
-          content: [{ type: "text", text: prompt }],
-        },
-      ],
+      depth,
+      examplesPerLeaf,
+      includeFAQ,
+      includeGlossary,
+      audience,
+      tone,
+      maxTokens,
+      temperature,
     });
 
-    // Extract text blocks
-    const markdown =
-      (message.content || [])
-        .filter((b) => b.type === "text" && typeof b.text === "string")
-        .map((b) => b.text)
-        .join("")
-        .trim() || "";
-
-    if (!markdown) {
-      throw new Error("Failed to generate mindmap content");
-    }
-
-    res.status(200).json({ markdown });
-  } catch (error) {
+    res.status(200).json({ markdown, usage });
+  } catch (error: any) {
     console.error("Error generating mindmap:", error);
-
-    // Normalize Anthropic errors
     const status = error?.status || 500;
-    const apiMsg =
-      error?.error?.message ||
-      error?.message ||
-      "Unknown error from Claude API";
-
-    res.status(status).json({
+    const message =
+      error?.error?.message || error?.message || "Failed to generate mindmap";
+    res.status(status >= 400 && status < 600 ? status : 500).json({
       error: "Failed to generate mindmap",
-      message: apiMsg,
-      // Only expose stack in dev
+      message,
+      details: error?.error || undefined,
       stack: process.env.NODE_ENV === "development" ? error?.stack : undefined,
     });
   }
 });
 
-// OPTIONS for the endpoint
+// ---------- OPTIONS ----------
 app.options("/generate-mindmap", cors(corsOptions), (_req, res) => {
   res.status(204).send();
 });
 
-// Start
+// ---------- Start ----------
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
