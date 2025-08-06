@@ -133,7 +133,7 @@ For example, for "Plan a Wedding Event":
 
 Ensure the mindmap is hierarchical, well-organized, and covers the most critical and relevant aspects of the topic.
 Include up to four levels of markdown hierarchy (never use a fifth level, such as #####).
-At the fourth level (####), include as many specific examples or details as relevant to illustrate the sub-branch.
+At the fourth level (####), include as many specific examples or details as relevant to illustrate the sub-branch. Do not necessarily limit them to 2 examples.
 The markdown must be clean, properly formatted, and compatible with rendering in the Markmap library (e.g., no extra spaces, comments, or non-markdown text).
 Do not include introductory or summary comments. Only output the structured markdown.
 Focus on creating a mindmap that enhances understanding by breaking down the topic into its core components and showing clear relationships between them.`;
